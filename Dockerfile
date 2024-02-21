@@ -127,7 +127,9 @@ RUN \
 
 # Set public environment variables.
 ENV \
-    DISABLE_IPV6=1 TZ='Asia/Shanghai' LANG='zh_CN.UTF-8
+    DISABLE_IPV6=1 \
+    TZ='Asia/Shanghai' \
+    LANG='zh_CN.UTF-8'
 
 # Expose ports.
 #   - 8080: HTTP traffic
