@@ -120,7 +120,7 @@ COPY --from=certbot /tmp/certbot-install/ /
 
 # Set internal environment variables.
 RUN \
-    set-cont-env APP_NAME "NginxPM" && \
+    set-cont-env APP_NAME "Nginx Proxy Manager" && \
     set-cont-env APP_VERSION "$NGINX_PROXY_MANAGER_VERSION" && \
     set-cont-env DOCKER_IMAGE_VERSION "$DOCKER_IMAGE_VERSION" && \
     true
