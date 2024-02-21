@@ -1,4 +1,4 @@
-name: Docker image CI/CD
+name: 打包/推送Docker镜像
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

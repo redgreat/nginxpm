@@ -120,16 +120,14 @@ COPY --from=certbot /tmp/certbot-install/ /
 
 # Set internal environment variables.
 RUN \
-    set-cont-env APP_NAME "Nginx Proxy Manager" && \
+    set-cont-env APP_NAME "NginxPM" && \
     set-cont-env APP_VERSION "$NGINX_PROXY_MANAGER_VERSION" && \
     set-cont-env DOCKER_IMAGE_VERSION "$DOCKER_IMAGE_VERSION" && \
     true
 
 # Set public environment variables.
 ENV \
-    DISABLE_IPV6=1,
-    TZ='Asia/Shanghai',
-    LANG='zh_CN.UTF-8
+    DISABLE_IPV6=1 TZ='Asia/Shanghai' LANG='zh_CN.UTF-8
 
 # Expose ports.
 #   - 8080: HTTP traffic
@@ -139,7 +137,7 @@ EXPOSE 8080 4443 8181
 
 # Metadata.
 LABEL \
-      org.label-schema.name="nginxpm" \
+      org.label-schema.name="NginxPM" \
       org.label-schema.description="Nginx代理Web控制台Docker镜像" \
       org.label-schema.version="${DOCKER_IMAGE_VERSION:-unknown}" \
       org.label-schema.vcs-url="https://github.com/redgreat/nginxpm" \
