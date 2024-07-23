@@ -21,10 +21,6 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        if: ${{ steps.prep.outputs.release_type == 'standard' }}
-
       - name: free disk space
         run: |
           # free disk space.
@@ -43,10 +39,6 @@ jobs:
           echo "::group::After"
           df -h /
           echo "::endgroup::"
-
-      - uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: prepare
         id: prep
@@ -146,6 +138,10 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.prep.outputs.label_version }}
           docker buildx imagetools inspect ${{ env.ALIYUN_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.prep.outputs.label_version }}
+
+      - name: checkout
+        uses: actions/checkout@v4
+        if: ${{ steps.prep.outputs.release_type == 'standard' }}
 
       - name: dockerhub description
         if: ${{ steps.prep.outputs.release_type == 'standard' }}
