@@ -6,6 +6,7 @@ concurrency:
 
 env:
   DOCKER_IMAGE_NAME: redgreat/nginxpm
+  ALIYUN_REGISTRY: registry.cn-hangzhou.aliyuncs.com
   PLATFORMS: linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64/v8
 
 on:
@@ -18,13 +19,17 @@ on:
 
 jobs:
   build:
-    name: Build image
+    name: build image
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Free disk space
+      - name: checkout
+        uses: actions/checkout@v4
+        if: ${{ steps.prep.outputs.release_type == 'standard' }}
+
+      - name: free disk space
         run: |
-          # Free disk space.
+          # free disk space.
           echo "::group::Before"
           df -h /
           echo "::endgroup::"
@@ -41,7 +46,11 @@ jobs:
           df -h /
           echo "::endgroup::"
 
-      - name: Prepare
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: prepare
         id: prep
         run: |
           # Determine the Docker container version.
@@ -66,9 +75,10 @@ jobs:
             LABEL_VERSION=${VERSION:1}
           fi
           # Determine the Docker container tags.
-          TAGS="${{ env.DOCKER_IMAGE_NAME }}:${VERSION}"
+          TAGS="${{ env.DOCKER_IMAGE_NAME}}:${LABEL_VERSION}"
+          TAGS="$TAGS,${{ env.ALIYUN_REGISTRY}}/${{ env.DOCKER_IMAGE_NAME}}:${LABEL_VERSION}"
           if [[ $GITHUB_REF =~ refs/tags/* ]]; then
-            TAGS="$TAGS,${{ env.DOCKER_IMAGE_NAME }}:latest"
+          TAGS="$TAGS,${{ env.DOCKER_IMAGE_NAME }}:latest,${{ env.ALIYUN_REGISTRY}}/${{ env.DOCKER_IMAGE_NAME }}:latest"
           fi
           # Determine the release type.
           if [[ $GITHUB_REF =~ refs/tags/* ]]; then
@@ -99,23 +109,30 @@ jobs:
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
           #echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
-      - name: Setup QEMU
+      - name: setup QEMU
         uses: docker/setup-qemu-action@v2
         with:
           platforms: arm,arm64,ppc64le,mips64,s390x
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: setup docker buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Login to DockerHub
+      - name: login to dockerHub
         if: ${{ steps.prep.outputs.is_release == 'yes' }}
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v4
+      - name: aliyun registry login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ALIYUN_REGISTRY }}
+          username: ${{ secrets.ALIYUN_REGISTRY_USER }}
+          password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
+
+      - name: build and push
+        uses: docker/build-push-action@v6
         with:
           push: ${{ steps.prep.outputs.is_release == 'yes' }}
           provenance: false
@@ -126,16 +143,13 @@ jobs:
           cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
           cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
 
-      - name: Inspect
+      - name: inspect
         if: ${{ steps.prep.outputs.is_release == 'yes' }}
         run: |
-          docker buildx imagetools inspect ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.prep.outputs.version }}
+          docker buildx imagetools inspect ${{ env.DOCKER_IMAGE_NAME }}:${{ steps.prep.outputs.label_version }}
+          docker buildx imagetools inspect ${{ env.ALIYUN_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.prep.outputs.label_version }}
 
-      - name: Checkout
-        uses: actions/checkout@v3
-        if: ${{ steps.prep.outputs.release_type == 'standard' }}
-
-      - name: Dockerhub description
+      - name: dockerhub description
         if: ${{ steps.prep.outputs.release_type == 'standard' }}
         uses: peter-evans/dockerhub-description@v3
         with:

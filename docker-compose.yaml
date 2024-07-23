@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  app:
+    image: 'redgreat/nginxpm:latest'
+    container_name: nginxpm
+    restart: always
+    ports:
+      - '80:8080'
+      - '8181:8181'
+      - '443:4443'
+    volumes:
+      - ./data:/config:rw
+    environment:
+      DISABLE_IPV6: 'true'
+      TZ: 'Asia/Shanghai'
+      LANG: 'zh_CN.UTF-8'
